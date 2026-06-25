@@ -15,7 +15,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     .header-left { display: flex; align-items: center; gap: 14px; }
-    .header-left .icon { font-size: 30px; }
+    .logo-img { height: 42px; width: auto; }
     header h1 { font-size: 22px; font-weight: 700; }
     header p  { font-size: 13px; opacity: 0.8; margin-top: 2px; }
     .header-actions { display: flex; gap: 10px; align-items: center; }
@@ -103,13 +103,33 @@
       background: white; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.08);
     }
     .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+    .repeat-row { margin-top: 10px; }
+    .repeat-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #4a5568; font-weight: 400;
+      text-transform: none; letter-spacing: normal; cursor: pointer;
+    }
+    .repeat-label input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; margin: 0; accent-color: #2563eb; }
+    .repeat-badge {
+      background: #ede9fe; color: #6d28d9; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 20px; white-space: nowrap; margin-left: 6px;
+    }
+
+    footer {
+      text-align: center; padding: 24px 20px 32px;
+      font-size: 13px; color: #64748b;
+      border-top: 1px solid #e2e8f0; margin-top: 8px;
+    }
+    footer a { color: #2563eb; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="header-left">
-    <div class="icon">✅</div>
+    <img src="/susidha-logo.png" class="logo-img" alt="Susidha" />
     <div>
       <h1>To-Do Tracker</h1>
       <p id="welcomeMsg">Loading…</p>
@@ -153,6 +173,12 @@
         <button class="btn-add" id="addBtn" onclick="addTask()">Add Task</button>
       </div>
     </div>
+    <div class="repeat-row">
+      <label class="repeat-label">
+        <input type="checkbox" id="repeatMonthly" />
+        Repeats monthly — a new copy will be created automatically each month
+      </label>
+    </div>
     <div class="msg" id="msg"></div>
   </div>
 
@@ -164,6 +190,12 @@
   <div id="taskContainer"></div>
 
 </main>
+
+<footer>
+  <a href="/policy">Refund Policy</a> &nbsp;·&nbsp;
+  Support: <a href="mailto:contact@susidha.com?subject=TODO-app%20Support">contact@susidha.com</a>
+  &nbsp;(subject must start with "TODO-app")
+</footer>
 
 <script>
   const today = () => new Date().toISOString().slice(0, 10);
@@ -214,7 +246,7 @@
     const rows = tasks.map(t => `
       <tr>
         <td><strong>#${t.id}</strong></td>
-        <td>${t.name}</td>
+        <td>${t.name}${t.repeatMonthly ? '<span class="repeat-badge">↻ Monthly</span>' : ''}</td>
         <td>${t.date}</td>
         <td>${daysBadge(t.daysPassed)}</td>
         <td>${t.completionDate ? t.completionDate : '<span class="no-date">Not set</span>'}</td>
@@ -235,12 +267,13 @@
     const name           = document.getElementById('taskName').value.trim();
     const startDate      = document.getElementById('startDate').value;
     const completionDate = document.getElementById('completionDate').value;
+    const repeatMonthly  = document.getElementById('repeatMonthly').checked;
     const msgEl          = document.getElementById('msg');
     msgEl.className = 'msg';
 
     if (!name) { msgEl.className = 'msg error'; msgEl.textContent = 'Task name is required.'; return; }
 
-    const body = { name, date: startDate || today() };
+    const body = { name, date: startDate || today(), repeatMonthly };
     if (completionDate) body.completionDate = completionDate;
 
     const res = await fetch('/api/tasks', {
@@ -254,6 +287,7 @@
     document.getElementById('taskName').value = '';
     document.getElementById('completionDate').value = '';
     document.getElementById('startDate').value = today();
+    document.getElementById('repeatMonthly').checked = false;
     await loadUsage();
     await loadTasks();
     setTimeout(() => { msgEl.className = 'msg'; }, 3000);

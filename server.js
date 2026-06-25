@@ -97,10 +97,17 @@ users.forEach(u => {
 });
 if (profileMigrated) saveUsers();
 
-// ── Migrate legacy tasks (no userId) → assign to admin ────────────────────────
+// ── Migrate legacy tasks (no userId, missing repeatMonthly) ───────────────────
 let migrated = false;
-tasks.forEach(t => { if (!t.userId) { t.userId = 'admin'; migrated = true; } });
+tasks.forEach(t => {
+  if (!t.userId)                   { t.userId = 'admin'; migrated = true; }
+  if (t.repeatMonthly === undefined) { t.repeatMonthly = false; migrated = true; }
+});
 if (migrated) saveTasks();
+
+// ── Process recurring tasks (on startup; also runs daily) ─────────────────────
+processRecurringTasks();
+setInterval(processRecurringTasks, 24 * 60 * 60 * 1000);
 
 // ── Storage limit ──────────────────────────────────────────────────────────────
 const STORAGE_LIMIT_BYTES = 200 * 1024 * 1024; // 200 MB
@@ -134,6 +141,30 @@ function enrichTask(t) {
   const daysPassed = daysBetween(t.date, today());
   const totalDays  = t.completionDate ? daysBetween(t.date, t.completionDate) : null;
   return { ...t, daysPassed, totalDays };
+}
+
+function addOneMonth(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const nextMonth = m === 12 ? 1 : m + 1;
+  const nextYear  = m === 12 ? y + 1 : y;
+  const maxDay    = new Date(nextYear, nextMonth, 0).getDate();
+  return `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(Math.min(d, maxDay)).padStart(2, '0')}`;
+}
+
+function processRecurringTasks() {
+  const todayStr = today();
+  const newTasks = [];
+  tasks.forEach(t => {
+    if (!t.repeatMonthly || t.completionDate || t.date >= todayStr) return;
+    t.completionDate = todayStr;
+    if (!nextIds[t.userId]) nextIds[t.userId] = 1;
+    newTasks.push({ id: nextIds[t.userId]++, userId: t.userId, name: t.name, date: addOneMonth(t.date), completionDate: null, repeatMonthly: true });
+  });
+  if (newTasks.length) {
+    tasks.push(...newTasks);
+    saveTasks();
+    console.log(`[recurring] Renewed ${newTasks.length} monthly task(s)`);
+  }
 }
 
 // ── Middleware ─────────────────────────────────────────────────────────────────
@@ -187,6 +218,7 @@ app.get('/change-password', (req, res) => {
 
 app.get('/admin', requireAdmin, (req, res) => res.sendFile(path.join(VIEWS, 'admin.html')));
 app.get('/profile', requireAuth, (req, res) => res.sendFile(path.join(VIEWS, 'profile.html')));
+app.get('/policy', (req, res) => res.sendFile(path.join(VIEWS, 'policy.html')));
 
 // ── Auth API ───────────────────────────────────────────────────────────────────
 app.post('/api/login', (req, res) => {
@@ -294,7 +326,7 @@ app.get('/api/usage', apiAuth, (req, res) => {
 });
 
 app.post('/api/tasks', apiAuth, (req, res) => {
-  const { name, date, completionDate } = req.body;
+  const { name, date, completionDate, repeatMonthly } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
 
   const usage = getUserUsage(req.session.username);
@@ -311,7 +343,7 @@ app.post('/api/tasks', apiAuth, (req, res) => {
 
   const username = req.session.username;
   if (!nextIds[username]) nextIds[username] = 1;
-  const task = { id: nextIds[username]++, userId: username, name, date: taskDate, completionDate: completionDate || null };
+  const task = { id: nextIds[username]++, userId: username, name, date: taskDate, completionDate: completionDate || null, repeatMonthly: !!repeatMonthly };
   tasks.push(task);
   saveTasks();
   res.status(201).json(enrichTask(task));

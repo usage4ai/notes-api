@@ -22,7 +22,8 @@
       max-width: 400px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.25);
     }
-    .logo { text-align: center; font-size: 48px; margin-bottom: 8px; }
+    .logo { text-align: center; margin-bottom: 8px; }
+    .logo img { height: 72px; width: auto; }
     h1 { text-align: center; font-size: 22px; color: #1e3a8a; margin-bottom: 4px; }
     .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 28px; }
     label { display: block; font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
@@ -54,11 +55,16 @@
       border-radius: 8px; padding: 10px 14px; font-size: 13px;
       margin-top: 14px; text-align: center; display: none;
     }
+    .page-footer {
+      text-align: center; margin-top: 20px; font-size: 12px; color: rgba(255,255,255,0.7);
+    }
+    .page-footer a { color: rgba(255,255,255,0.85); text-decoration: none; }
+    .page-footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 <div class="card">
-  <div class="logo">✅</div>
+  <div class="logo"><img src="/susidha-logo.png" alt="Susidha" /></div>
   <h1>To-Do Tracker</h1>
   <p class="subtitle">Sign in to manage your tasks</p>
   <div class="error" id="err"></div>
@@ -71,6 +77,10 @@
   <div class="forgot-msg" id="forgotMsg">
     Please contact your administrator to reset your password.
   </div>
+</div>
+<div class="page-footer">
+  <a href="/policy">Refund Policy</a> &nbsp;·&nbsp;
+  Support: <a href="mailto:contact@susidha.com?subject=TODO-app%20Support">contact@susidha.com</a>
 </div>
 <script>
   document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
