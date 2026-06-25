@@ -8,4 +8,4 @@ shell.Run "cmd /c cd /d ""G:\Claude Code\notes-api"" && node server.js", 0, Fals
 WScript.Sleep 2000
 
 ' Open the app in the default browser
-shell.Run "http://localhost:3000", 1, False
+shell.Run "http://localhost:3001", 1, False
