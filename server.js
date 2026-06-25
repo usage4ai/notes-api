@@ -23,12 +23,39 @@ const sessionSecret = fs.existsSync(SECRET_FILE)
 
 // ── JSON persistence ───────────────────────────────────────────────────────────
 function loadJSON(file, defaults) {
+  // Clean up any orphaned .tmp left by a previous crash
+  try { if (fs.existsSync(file + '.tmp')) fs.unlinkSync(file + '.tmp'); } catch {}
+
   if (!fs.existsSync(file)) return defaults;
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-  catch { return defaults; }
+  catch {
+    // File exists but is corrupted — try the last-known-good backup before
+    // falling back to defaults (which would wipe all users and reset passwords).
+    const bak = file + '.bak';
+    if (fs.existsSync(bak)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(bak, 'utf8'));
+        console.error(`[startup] ${path.basename(file)} corrupted — restored from .bak`);
+        fs.writeFileSync(file, JSON.stringify(data, null, 2));
+        return data;
+      } catch {}
+    }
+    console.error(`[startup] ${path.basename(file)} corrupted and no .bak available — starting fresh`);
+    return defaults;
+  }
 }
+
 function saveJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  // Atomic write: write to .tmp first, then rename over the real file.
+  // This guarantees the file is always complete — a killed process can never
+  // leave a half-written (zero-byte or truncated) file that wipes user data.
+  const tmp = file + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+  // Keep a backup of the previous good copy for corruption recovery.
+  if (fs.existsSync(file)) {
+    try { fs.copyFileSync(file, file + '.bak'); } catch {}
+  }
+  fs.renameSync(tmp, file);
 }
 
 let { tasks, nextIds } = (() => {
