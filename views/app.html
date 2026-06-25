@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white; padding: 20px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-left .icon { font-size: 30px; }
+    header h1 { font-size: 22px; font-weight: 700; }
+    header p  { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .btn-nav {
+      background: rgba(255,255,255,0.15); color: white;
+      border: 1px solid rgba(255,255,255,0.3); border-radius: 7px;
+      padding: 7px 16px; font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: background 0.2s;
+    }
+    .btn-nav:hover { background: rgba(255,255,255,0.25); }
+
+    main { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+
+    /* ── Usage bar ── */
+    .usage-bar-wrap {
+      background: white; border-radius: 10px; padding: 14px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 20px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .usage-label { font-size: 13px; color: #4a5568; white-space: nowrap; min-width: 180px; }
+    .usage-label strong { color: #1e3a8a; }
+    .bar-track { flex: 1; height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 99px; transition: width 0.4s; background: #2563eb; }
+    .bar-fill.warn { background: #f59e0b; }
+    .bar-fill.full { background: #dc2626; }
+    .usage-limit-msg {
+      background: #fee2e2; color: #991b1b; border-radius: 8px;
+      padding: 10px 16px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: none;
+    }
+
+    /* ── Add Task Card ── */
+    .card { background: white; border-radius: 12px; padding: 26px 30px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .card h2 { font-size: 15px; font-weight: 600; color: #1e3a8a; margin-bottom: 16px; }
+
+    .form-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: end;
+    }
+    @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+
+    label { display: block; font-size: 12px; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+    input[type="text"], input[type="date"] {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px;
+      font-size: 14px; color: #2d3748; outline: none; transition: border-color 0.2s;
+    }
+    input:focus { border-color: #2563eb; }
+    .btn-add {
+      background: #2563eb; color: white; border: none; border-radius: 8px;
+      padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+      white-space: nowrap; height: 40px; transition: background 0.2s;
+    }
+    .btn-add:hover { background: #1d4ed8; }
+    .btn-add:disabled { background: #94a3b8; cursor: not-allowed; }
+    .msg { margin-top: 12px; font-size: 13px; padding: 8px 14px; border-radius: 6px; display: none; }
+    .msg.success { background: #d1fae5; color: #065f46; display: block; }
+    .msg.error   { background: #fee2e2; color: #991b1b; display: block; }
+
+    /* ── Tasks Table ── */
+    .tasks-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .tasks-header h2 { font-size: 15px; font-weight: 600; color: #1e3a8a; }
+    .badge { background: #dbeafe; color: #1d4ed8; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+    .table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    thead { background: #1e3a8a; color: white; }
+    thead th { padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #e2e8f0; transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f7faff; }
+    tbody td { padding: 12px 16px; font-size: 14px; vertical-align: middle; }
+
+    .days-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .days-0    { background: #d1fae5; color: #065f46; }
+    .days-low  { background: #fef3c7; color: #92400e; }
+    .days-high { background: #fee2e2; color: #991b1b; }
+    .no-date   { color: #a0aec0; font-style: italic; font-size: 13px; }
+
+    .btn-done {
+      background: #10b981; color: white; border: none; border-radius: 6px;
+      padding: 5px 13px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-done:hover { background: #059669; }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: #a0aec0;
+      background: white; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="icon">✅</div>
+    <div>
+      <h1>To-Do Tracker</h1>
+      <p id="welcomeMsg">Loading…</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a id="adminLink" href="/admin" class="btn-nav" style="display:none">Admin Panel</a>
+    <button class="btn-nav" onclick="logout()">Sign Out</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Usage bar -->
+  <div class="usage-bar-wrap">
+    <div class="usage-label">Storage: <strong id="usageText">— / ~1000 tasks</strong></div>
+    <div class="bar-track"><div class="bar-fill" id="usageBar" style="width:0%"></div></div>
+  </div>
+  <div class="usage-limit-msg" id="limitMsg">
+    ⚠️ Storage limit reached. Delete completed tasks before adding new ones.
+  </div>
+
+  <!-- Add Task Form -->
+  <div class="card">
+    <h2>+ Add New Task</h2>
+    <div class="form-grid">
+      <div>
+        <label for="taskName">Task Name *</label>
+        <input type="text" id="taskName" placeholder="e.g. Update Susidha profile" />
+      </div>
+      <div>
+        <label for="startDate">Start Date</label>
+        <input type="date" id="startDate" />
+      </div>
+      <div>
+        <label for="completionDate">Completion Date</label>
+        <input type="date" id="completionDate" />
+      </div>
+      <div>
+        <button class="btn-add" id="addBtn" onclick="addTask()">Add Task</button>
+      </div>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <!-- Task List -->
+  <div class="tasks-header">
+    <h2>Active Tasks</h2>
+    <span class="badge" id="taskCount">0 tasks</span>
+  </div>
+  <div id="taskContainer"></div>
+
+</main>
+
+<script>
+  const today = () => new Date().toISOString().slice(0, 10);
+  document.getElementById('startDate').value = today();
+
+  let limitReached = false;
+
+  async function init() {
+    const me = await fetch('/api/me').then(r => r.json());
+    document.getElementById('welcomeMsg').textContent = `Welcome, ${me.username}`;
+    if (me.isAdmin) document.getElementById('adminLink').style.display = 'inline-block';
+    await loadUsage();
+    await loadTasks();
+  }
+
+  async function loadUsage() {
+    const u = await fetch('/api/usage').then(r => r.json());
+    limitReached = u.limitReached;
+
+    document.getElementById('usageText').textContent = `${u.taskCount} / ~${u.displayMax} tasks used`;
+
+    const pct = Math.min((u.taskCount / u.displayMax) * 100, 100);
+    const bar = document.getElementById('usageBar');
+    bar.style.width = pct + '%';
+    bar.className = 'bar-fill' + (pct >= 100 ? ' full' : pct >= 80 ? ' warn' : '');
+
+    document.getElementById('limitMsg').style.display = u.limitReached ? 'block' : 'none';
+    document.getElementById('addBtn').disabled = u.limitReached;
+  }
+
+  async function loadTasks() {
+    const tasks = await fetch('/api/tasks').then(r => r.json());
+    document.getElementById('taskCount').textContent = `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
+    renderTasks(tasks);
+  }
+
+  function daysBadge(days) {
+    const cls = days === 0 ? 'days-0' : days <= 3 ? 'days-low' : 'days-high';
+    return `<span class="days-badge ${cls}">${days} day${days !== 1 ? 's' : ''}</span>`;
+  }
+
+  function renderTasks(tasks) {
+    const container = document.getElementById('taskContainer');
+    if (tasks.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">🎉</div><p>No active tasks — you're all caught up!</p></div>`;
+      return;
+    }
+    const rows = tasks.map(t => `
+      <tr>
+        <td><strong>#${t.id}</strong></td>
+        <td>${t.name}</td>
+        <td>${t.date}</td>
+        <td>${daysBadge(t.daysPassed)}</td>
+        <td>${t.completionDate ? t.completionDate : '<span class="no-date">Not set</span>'}</td>
+        <td>${t.totalDays !== null ? t.totalDays + ' days' : '<span class="no-date">N/A</span>'}</td>
+        <td><button class="btn-done" onclick="deleteTask(${t.id})">✔ Done</button></td>
+      </tr>`).join('');
+    container.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Task</th><th>Start Date</th><th>Days Active</th><th>Completion Date</th><th>Total Days</th><th>Action</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  async function addTask() {
+    if (limitReached) return;
+    const name           = document.getElementById('taskName').value.trim();
+    const startDate      = document.getElementById('startDate').value;
+    const completionDate = document.getElementById('completionDate').value;
+    const msgEl          = document.getElementById('msg');
+    msgEl.className = 'msg';
+
+    if (!name) { msgEl.className = 'msg error'; msgEl.textContent = 'Task name is required.'; return; }
+
+    const body = { name, date: startDate || today() };
+    if (completionDate) body.completionDate = completionDate;
+
+    const res = await fetch('/api/tasks', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (!res.ok) { msgEl.className = 'msg error'; msgEl.textContent = data.error; return; }
+
+    msgEl.className = 'msg success'; msgEl.textContent = `Task "${data.name}" added!`;
+    document.getElementById('taskName').value = '';
+    document.getElementById('completionDate').value = '';
+    document.getElementById('startDate').value = today();
+    await loadUsage();
+    await loadTasks();
+    setTimeout(() => { msgEl.className = 'msg'; }, 3000);
+  }
+
+  async function deleteTask(id) {
+    if (!confirm('Mark this task as done and remove it?')) return;
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    await loadUsage();
+    await loadTasks();
+  }
+
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  }
+
+  document.getElementById('taskName').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+  init();
+</script>
+</body>
+</html>
