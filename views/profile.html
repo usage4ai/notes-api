@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile — To-Do Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white; padding: 20px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-left .icon { font-size: 30px; }
+    header h1 { font-size: 22px; font-weight: 700; }
+    header p  { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .btn-nav {
+      background: rgba(255,255,255,0.15); color: white;
+      border: 1px solid rgba(255,255,255,0.3); border-radius: 7px;
+      padding: 7px 16px; font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: background 0.2s;
+    }
+    .btn-nav:hover { background: rgba(255,255,255,0.25); }
+
+    main { max-width: 680px; margin: 32px auto; padding: 0 20px; }
+
+    .card { background: white; border-radius: 12px; padding: 28px 32px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .card h2 { font-size: 16px; font-weight: 700; color: #1e3a8a; margin-bottom: 20px; }
+
+    .profile-header { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+    .avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white; font-size: 26px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .profile-meta h3 { font-size: 18px; font-weight: 700; color: #1a202c; }
+    .profile-meta .username-tag { font-size: 13px; color: #64748b; margin-top: 3px; }
+
+    .divider { border: none; border-top: 1px solid #e2e8f0; margin: 0 0 22px; }
+
+    .field-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"] {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px;
+      font-size: 14px; color: #2d3748; outline: none; transition: border-color 0.2s;
+    }
+    input:focus { border-color: #2563eb; }
+    input[readonly] { background: #f7fafc; color: #718096; cursor: default; }
+
+    .btn-save {
+      background: #2563eb; color: white; border: none; border-radius: 8px;
+      padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s; margin-top: 4px;
+    }
+    .btn-save:hover { background: #1d4ed8; }
+
+    .msg { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 12px; display: none; }
+    .msg.success { background: #d1fae5; color: #065f46; display: block; }
+    .msg.error   { background: #fee2e2; color: #991b1b; display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="icon">👤</div>
+    <div>
+      <h1>My Profile</h1>
+      <p id="headerSub">Loading…</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a id="adminLink" href="/admin" class="btn-nav" style="display:none">Admin Panel</a>
+    <a href="/" class="btn-nav">← My Tasks</a>
+    <button class="btn-nav" onclick="logout()">Sign Out</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Account Details Card -->
+  <div class="card">
+    <div class="profile-header">
+      <div class="avatar" id="avatar">?</div>
+      <div class="profile-meta">
+        <h3 id="displayName">Loading…</h3>
+        <div class="username-tag" id="usernameTag"></div>
+      </div>
+    </div>
+    <hr class="divider">
+    <h2>Account Details</h2>
+
+    <div class="field-group">
+      <label>Username</label>
+      <input type="text" id="username" readonly />
+    </div>
+    <div class="field-group">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" placeholder="Your full name" />
+    </div>
+    <div class="field-group">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" placeholder="your@email.com" />
+    </div>
+    <div class="field-group">
+      <label for="phone">Phone Number</label>
+      <input type="tel" id="phone" placeholder="+1 555 000 0000" />
+    </div>
+    <button class="btn-save" onclick="saveProfile()">Save Changes</button>
+    <div class="msg" id="profileMsg"></div>
+  </div>
+
+  <!-- Change Password Card -->
+  <div class="card">
+    <h2>Change Password</h2>
+    <div class="field-group">
+      <label for="currentPw">Current Password</label>
+      <input type="password" id="currentPw" placeholder="Enter your current password" />
+    </div>
+    <div class="field-group">
+      <label for="newPw">New Password</label>
+      <input type="password" id="newPw" placeholder="At least 6 characters" />
+    </div>
+    <div class="field-group">
+      <label for="confirmPw">Confirm New Password</label>
+      <input type="password" id="confirmPw" placeholder="Repeat new password" />
+    </div>
+    <button class="btn-save" onclick="changePassword()">Change Password</button>
+    <div class="msg" id="pwMsg"></div>
+  </div>
+
+</main>
+
+<script>
+  async function init() {
+    const me = await fetch('/api/me').then(r => r.json());
+
+    document.getElementById('headerSub').textContent = me.username;
+    document.getElementById('username').value = me.username;
+    document.getElementById('name').value  = me.name  || '';
+    document.getElementById('email').value = me.email || '';
+    document.getElementById('phone').value = me.phone || '';
+
+    const displayName = me.name || me.username;
+    document.getElementById('displayName').textContent = displayName;
+    document.getElementById('usernameTag').textContent = '@' + me.username;
+    document.getElementById('avatar').textContent = displayName.charAt(0).toUpperCase();
+
+    if (me.isAdmin) document.getElementById('adminLink').style.display = 'inline-block';
+  }
+
+  async function saveProfile() {
+    const name  = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const msgEl = document.getElementById('profileMsg');
+    msgEl.className = 'msg';
+
+    const res = await fetch('/api/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, phone })
+    });
+    const data = await res.json();
+
+    if (!res.ok) { msgEl.className = 'msg error'; msgEl.textContent = data.error; return; }
+
+    const displayName = data.name || document.getElementById('username').value;
+    document.getElementById('displayName').textContent = displayName;
+    document.getElementById('avatar').textContent = displayName.charAt(0).toUpperCase();
+
+    msgEl.className = 'msg success'; msgEl.textContent = 'Profile updated successfully.';
+    setTimeout(() => { msgEl.className = 'msg'; }, 3000);
+  }
+
+  async function changePassword() {
+    const currentPassword = document.getElementById('currentPw').value;
+    const newPassword     = document.getElementById('newPw').value;
+    const confirm         = document.getElementById('confirmPw').value;
+    const msgEl           = document.getElementById('pwMsg');
+    msgEl.className = 'msg';
+
+    if (newPassword !== confirm) {
+      msgEl.className = 'msg error'; msgEl.textContent = 'New passwords do not match.'; return;
+    }
+
+    const res = await fetch('/api/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await res.json();
+
+    if (!res.ok) { msgEl.className = 'msg error'; msgEl.textContent = data.error; return; }
+
+    document.getElementById('currentPw').value = '';
+    document.getElementById('newPw').value = '';
+    document.getElementById('confirmPw').value = '';
+    msgEl.className = 'msg success'; msgEl.textContent = 'Password changed successfully.';
+    setTimeout(() => { msgEl.className = 'msg'; }, 3000);
+  }
+
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -34,8 +34,11 @@
     }
     .card h2 { font-size: 16px; font-weight: 600; color: #7c2d12; margin-bottom: 20px; }
 
-    .form-row { display: flex; gap: 12px; align-items: flex-end; }
-    .form-group { flex: 1; }
+    .form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .form-group { flex: 1; min-width: 160px; }
+    .form-row-optional { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+    .form-row-optional .form-group { flex: 1; min-width: 160px; }
+    .optional-label { font-size: 11px; color: #9ca3af; font-weight: 400; margin-left: 4px; text-transform: none; letter-spacing: 0; }
     label { display: block; font-size: 12px; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
     input[type="text"], input[type="password"] {
       width: 100%; padding: 10px 12px;
@@ -111,7 +114,23 @@
         <label for="tempPassword">Temporary Password</label>
         <input type="password" id="tempPassword" placeholder="User must change on first login" />
       </div>
-      <button class="btn-create" onclick="createUser()">Create User</button>
+    </div>
+    <div class="form-row-optional">
+      <div class="form-group">
+        <label for="newName">Full Name <span class="optional-label">(optional)</span></label>
+        <input type="text" id="newName" placeholder="e.g. John Doe" />
+      </div>
+      <div class="form-group">
+        <label for="newEmail">Email <span class="optional-label">(optional)</span></label>
+        <input type="text" id="newEmail" placeholder="john@example.com" />
+      </div>
+      <div class="form-group">
+        <label for="newPhone">Phone <span class="optional-label">(optional)</span></label>
+        <input type="text" id="newPhone" placeholder="+1 555 000 0000" />
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn-create" onclick="createUser()">Create User</button>
+      </div>
     </div>
     <div class="msg" id="createMsg"></div>
   </div>
@@ -161,13 +180,16 @@
   async function createUser() {
     const username = document.getElementById('newUsername').value.trim();
     const password = document.getElementById('tempPassword').value;
-    const msgEl = document.getElementById('createMsg');
+    const name     = document.getElementById('newName').value.trim();
+    const email    = document.getElementById('newEmail').value.trim();
+    const phone    = document.getElementById('newPhone').value.trim();
+    const msgEl    = document.getElementById('createMsg');
     msgEl.className = 'msg';
 
     const res = await fetch('/admin/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, name, email, phone })
     });
     const data = await res.json();
 
@@ -179,6 +201,9 @@
     msgEl.textContent = `User "${data.username}" created. They must change their password on first login.`;
     document.getElementById('newUsername').value = '';
     document.getElementById('tempPassword').value = '';
+    document.getElementById('newName').value = '';
+    document.getElementById('newEmail').value = '';
+    document.getElementById('newPhone').value = '';
     loadUsers();
     setTimeout(() => { msgEl.className = 'msg'; }, 4000);
   }

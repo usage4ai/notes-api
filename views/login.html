@@ -44,6 +44,16 @@
       background: #fee2e2; color: #991b1b; border-radius: 8px;
       padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none;
     }
+    .forgot-link {
+      display: block; text-align: center; margin-top: 14px;
+      font-size: 13px; color: #2563eb; cursor: pointer; text-decoration: none;
+    }
+    .forgot-link:hover { text-decoration: underline; }
+    .forgot-msg {
+      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+      border-radius: 8px; padding: 10px 14px; font-size: 13px;
+      margin-top: 14px; text-align: center; display: none;
+    }
   </style>
 </head>
 <body>
@@ -57,9 +67,18 @@
   <label for="password">Password</label>
   <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" />
   <button onclick="login()">Sign In</button>
+  <a class="forgot-link" onclick="toggleForgot()">Forgot password?</a>
+  <div class="forgot-msg" id="forgotMsg">
+    Please contact your administrator to reset your password.
+  </div>
 </div>
 <script>
   document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  function toggleForgot() {
+    const el = document.getElementById('forgotMsg');
+    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  }
 
   async function login() {
     const username = document.getElementById('username').value.trim();

@@ -54,11 +54,21 @@ if (!users.find(u => u.isAdmin)) {
     username: 'admin',
     passwordHash: bcrypt.hashSync('admin123', 10),
     isAdmin: true,
-    mustChangePassword: false
+    mustChangePassword: false,
+    name: '', email: '', phone: ''
   });
   saveUsers();
   console.log('\n  Default admin created — username: admin  password: admin123\n');
 }
+
+// ── Migrate users missing profile fields ───────────────────────────────────────
+let profileMigrated = false;
+users.forEach(u => {
+  if (u.name  === undefined) { u.name  = ''; profileMigrated = true; }
+  if (u.email === undefined) { u.email = ''; profileMigrated = true; }
+  if (u.phone === undefined) { u.phone = ''; profileMigrated = true; }
+});
+if (profileMigrated) saveUsers();
 
 // ── Migrate legacy tasks (no userId) → assign to admin ────────────────────────
 let migrated = false;
@@ -149,6 +159,7 @@ app.get('/change-password', (req, res) => {
 });
 
 app.get('/admin', requireAdmin, (req, res) => res.sendFile(path.join(VIEWS, 'admin.html')));
+app.get('/profile', requireAuth, (req, res) => res.sendFile(path.join(VIEWS, 'profile.html')));
 
 // ── Auth API ───────────────────────────────────────────────────────────────────
 app.post('/api/login', (req, res) => {
@@ -191,7 +202,16 @@ app.post('/api/change-password', (req, res) => {
 app.get('/api/me', (req, res) => {
   if (!req.session.username) return res.status(401).json({ error: 'Not authenticated' });
   const user = findUser(req.session.username);
-  res.json({ username: user.username, isAdmin: !!user.isAdmin });
+  res.json({ username: user.username, isAdmin: !!user.isAdmin, name: user.name || '', email: user.email || '', phone: user.phone || '' });
+});
+
+app.put('/api/me', apiAuth, (req, res) => {
+  const user = findUser(req.session.username);
+  user.name  = ((req.body.name  || '').trim()).slice(0, 100);
+  user.email = ((req.body.email || '').trim()).slice(0, 100);
+  user.phone = ((req.body.phone || '').trim()).slice(0, 30);
+  saveUsers();
+  res.json({ ok: true, name: user.name, email: user.email, phone: user.phone });
 });
 
 // ── Admin API ──────────────────────────────────────────────────────────────────
@@ -205,14 +225,22 @@ app.get('/admin/api/users', adminApiAuth, (req, res) => {
 });
 
 app.post('/admin/api/users', adminApiAuth, (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, name, email, phone } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'username and password are required' });
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
     return res.status(400).json({ error: 'Username: 3–20 chars, letters/numbers/underscores only' });
   }
   if (findUser(username)) return res.status(409).json({ error: `Username "${username}" already exists` });
 
-  users.push({ username, passwordHash: bcrypt.hashSync(password, 10), isAdmin: false, mustChangePassword: true });
+  users.push({
+    username,
+    passwordHash: bcrypt.hashSync(password, 10),
+    isAdmin: false,
+    mustChangePassword: true,
+    name:  ((name  || '').trim()).slice(0, 100),
+    email: ((email || '').trim()).slice(0, 100),
+    phone: ((phone || '').trim()).slice(0, 30)
+  });
   saveUsers();
   res.status(201).json({ username, mustChangePassword: true });
 });
